@@ -11,21 +11,24 @@ description: "Performs rigorous academic peer review of engineering papers (PDF 
 
 ## 실행 모드
 
+
 agent로부터 전달받은 모드에 따라 아래 두 가지 방식 중 하나로 실행합니다.
 
 ### Simple Mode
 - **목적**: 빠른 1차 검토, 핵심 문제만 파악
 - **지적사항 수**: 최대 5개
-- **검토 범위**: 가장 심각한 문제만 (Technical Review B 항목 위주)
-- **작성 형식**: 간결하게, 각 항목 2~3문장 이내
+- **검토 범위**: 가장 심각한 문제만 (Formal Review A, Technical Review B 항목 위주)
+- **작성 형식**: 간결하게, 각 항목 1~3문장 이내
 - **저장 파일명**: `review-simple.md`
+- **기타**: simple mode 도 서두 (opening)이 있어야 함. 하지만 더 짧은 버젼으로 추가
 
 ### Detail Mode (기본값)
 - **목적**: 저널 제출 전 완전한 동료 심사
 - **지적사항 수**: 최소 10개, 최대 20개
 - **검토 범위**: A/B/C/D 전체 카테고리
-- **작성 형식**: 섹션/수식/Figure 번호 명시, 개선 방향 포함
+- **작성 형식**: 섹션/수식/Figure 번호 명시, 개선 방향 포함, 가능한 간결하게 작성 2~3문장 이내내
 - **저장 파일명**: `review-detail.md`
+
 
 ---
 
@@ -106,6 +109,11 @@ print(full_text)
 #### D. 그림 내용 검토 (Figure Review)
 - [ ] 그림 내의 text 폰트 크기가 너무 작거나 크지 않은가?
 - [ ] 그림 내의 text, 용어가 본문과 일치하는 단어를 사용하고 있는가? ex.) 본문에는 master-slave robot, 그림에는 Leder-follower robot
+
+#### E. 하지 말아야 할것
+- [ ] 너무 과도한 리뷰를 하는 것은 아닌가? 논문에서 phantom이나 exvivo 실험을 한다고 했는데, Invivo 실험을 해야 한다고 주장한다거나
+- [ ] 모든 실험을 다시 해야 한다고 강요한다거나
+- [ ] 너무 강한 표현으로 기분이 상할수 있는 리뷰를 한다거나
 
 ### 리뷰 항목 작성 형식
 
