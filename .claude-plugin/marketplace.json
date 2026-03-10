@@ -10,8 +10,8 @@
   },
   "plugins": [
     {
-      "name": "isd-generator",
-      "source": "./plugins/isd-generator",
+      "name": "isd-project_proposal_generator",
+      "source": "./plugins/isd-proposal_generator",
       "description": "ISD 연구계획서 전체 생성 (오케스트레이터 + 5개 Chapter + 이미지)",
       "version": "1.0.1",
       "strict": true,
@@ -26,8 +26,8 @@
       "skills": ["./skills"]
     },
     {
-      "name": "visual-generator",
-      "source": "./plugins/visual-generator",
+      "name": "figure-generator",
+      "source": "./plugins/figure-generator",
       "description": "시각자료 프롬프트 생성 및 이미지 렌더링 (4-block v3.0.0, Kurzgesagt/Gov/Seminar/WhatIf/Pitch/Comparison + Renderer)",
       "version": "3.0.0",
       "strict": true,
@@ -50,8 +50,8 @@
       ]
     },
     {
-      "name": "hwpx-generator",
-      "source": "./plugins/hwpx-generator",
+      "name": "hwpx-converter",
+      "source": "./plugins/hwpx-converter",
       "description": "HWPX 문서 생성/편집/분석 통합 플러그인. XML-first 빌드 + ZIP 치환 지원.",
       "version": "2.3.0",
       "strict": true,
