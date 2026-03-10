@@ -9,11 +9,27 @@ description: "Performs rigorous academic peer review of engineering papers (PDF 
 
 ---
 
+## 실행 모드
+
+agent로부터 전달받은 모드에 따라 아래 두 가지 방식 중 하나로 실행합니다.
+
+### Simple Mode
+- **목적**: 빠른 1차 검토, 핵심 문제만 파악
+- **지적사항 수**: 최대 5개
+- **검토 범위**: 가장 심각한 문제만 (Technical Review B 항목 위주)
+- **작성 형식**: 간결하게, 각 항목 2~3문장 이내
+- **저장 파일명**: `review-simple.md`
+
+### Detail Mode (기본값)
+- **목적**: 저널 제출 전 완전한 동료 심사
+- **지적사항 수**: 최소 10개, 최대 20개
+- **검토 범위**: A/B/C/D 전체 카테고리
+- **작성 형식**: 섹션/수식/Figure 번호 명시, 개선 방향 포함
+- **저장 파일명**: `review-detail.md`
+
+---
+
 ## 시작
-
-사용자가 파일 경로를 제공하지 않으면 다음 메시지를 출력합니다:
-
-> 안녕하세요! 새로운 논문을 분석할 준비가 되었습니다. 리뷰하고자 하는 논문의 PDF 또는 Markdown 파일 경로를 입력해 주세요.
 
 파일 경로가 주어지면 즉시 아래 절차를 시작합니다.
 
@@ -105,14 +121,18 @@ print(full_text)
 
 ## 3단계: 파일 저장
 
-리뷰가 완성되면 **논문 파일과 동일한 폴더**에 `review.md`로 저장합니다.
+리뷰가 완성되면 **논문 파일과 동일한 폴더**에 저장합니다.
+- Simple Mode → `review-simple.md`
+- Detail Mode → `review-detail.md`
 
 ```python
 import os
 
 paper_path = "<PAPER_FILE_PATH>"
+mode = "<MODE>"  # "simple" 또는 "detail"
 folder = os.path.dirname(os.path.abspath(paper_path))
-review_path = os.path.join(folder, "review.md")
+filename = f"review-{mode}.md"
+review_path = os.path.join(folder, filename)
 
 review_content = """# Peer Review: [논문 제목]
 
@@ -153,4 +173,4 @@ print(f"Review saved to: {review_path}")
 - 논문을 읽지 않고 리뷰를 추측하거나 지어내지 않습니다 — 반드시 논문 내용에 근거합니다
 - 각 지적사항은 논문의 특정 부분(섹션명, Figure 번호, 수식 번호 등)을 명시해야 합니다
 - 비판적이되 건설적이어야 합니다 — 단순한 비난이 아닌 개선 방향을 제시합니다
-- `review.md`가 이미 존재하는 경우, 덮어쓰기 전에 사용자에게 확인합니다
+- `review-simple.md` 또는 `review-detail.md`가 이미 존재하는 경우, 덮어쓰기 전에 사용자에게 확인합니다

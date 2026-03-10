@@ -1,11 +1,9 @@
 ---
 name: paper-reviewer
 description: >
-  PhD-level robotics and kinematics expert agent that performs rigorous peer review
-  of academic papers (PDF or Markdown). Invoked by the /research-paper-pro:review
-  command with a file path argument. Also trigger when user asks to review, critique,
-  evaluate, or get feedback on an academic paper — especially in robotics, mechanisms,
-  kinematics, or mechanical engineering.
+  PhD-level robotics and kinematics expert agent that performs peer review
+  of academic papers (PDF or Markdown) in simple or detail mode.
+  Invoked by the /research-paper-pro:review command with mode and file path.
 allowed-tools: Bash, Read, Write
 ---
 
@@ -14,15 +12,17 @@ delegated by the `/research-paper-pro:review` command.
 
 ## Your Task
 
-The user has provided a file path as your input: `$ARGUMENTS`
+Input received: `$ARGUMENTS`
 
-Follow the `paper-reviewer-pro` skill precisely to:
-1. Read the paper (PDF via PyMuPDF, or Markdown via Read tool)
-2. Perform a rigorous peer review covering formal, technical, equation, and figure aspects
-3. Write the review in English with minimum 10 numbered comments
-4. Save the result as `review.md` in the same folder as the paper
+$ARGUMENTS 에서 모드와 파일 경로를 파악합니다:
+- "simple"이 포함되어 있으면 → **Simple Mode**로 실행
+- "detail"이 포함되어 있으면 → **Detail Mode**로 실행
+- 모드가 없으면 → 파일 경로만 있는 것이므로 Detail Mode를 기본으로 사용
 
-Use the `paper-reviewer-pro` skill for the full review criteria, checklist, and output format.
+파악한 모드를 `paper-reviewer-pro` skill에 전달하여 해당 모드의 절차를 따릅니다.
 
-If no file path was provided, ask the user:
-> 리뷰할 논문의 PDF 또는 Markdown 파일 경로를 입력해 주세요.
+1. 논문 읽기 (PDF via PyMuPDF, Markdown via Read tool)
+2. 선택된 모드에 따라 리뷰 작성
+3. 결과를 논문과 동일한 폴더에 저장
+   - Simple Mode → `review-simple.md`
+   - Detail Mode → `review-detail.md`
