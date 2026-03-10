@@ -1,0 +1,65 @@
+{
+  "name": "honeypot",
+  "owner": {
+    "name": "Joonho Seo",
+    "url": "https://github.com/JSeo-KIMM"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "description": "연연구계획서 생성, 시각자료 성성성 마켓플레이스"
+  },
+  "plugins": [
+    {
+      "name": "isd-generator",
+      "source": "./plugins/isd-generator",
+      "description": "ISD 연구계획서 전체 생성 (오케스트레이터 + 5개 Chapter + 이미지)",
+      "version": "1.0.1",
+      "strict": true,
+      "agents": [
+        "./agents/chapter1.md",
+        "./agents/chapter2.md",
+        "./agents/chapter3.md",
+        "./agents/chapter4.md",
+        "./agents/chapter5.md",
+        "./agents/figure.md"
+      ],
+      "skills": ["./skills"]
+    },
+    {
+      "name": "visual-generator",
+      "source": "./plugins/visual-generator",
+      "description": "시각자료 프롬프트 생성 및 이미지 렌더링 (4-block v3.0.0, Kurzgesagt/Gov/Seminar/WhatIf/Pitch/Comparison + Renderer)",
+      "version": "3.0.0",
+      "strict": true,
+      "agents": [
+        "./agents/content-organizer.md",
+        "./agents/content-reviewer.md",
+        "./agents/prompt-designer.md",
+        "./agents/renderer-agent.md",
+        "./agents/prompt-validator.md"
+      ],
+      "skills": [
+        "./skills/layout-types",
+        "./skills/theme-concept",
+        "./skills/theme-gov",
+        "./skills/theme-seminar",
+        "./skills/theme-whatif",
+        "./skills/theme-pitch",
+        "./skills/theme-comparison",
+        "./skills/slide-renderer"
+      ]
+    },
+    {
+      "name": "hwpx-generator",
+      "source": "./plugins/hwpx-generator",
+      "description": "HWPX 문서 생성/편집/분석 통합 플러그인. XML-first 빌드 + ZIP 치환 지원.",
+      "version": "2.3.0",
+      "strict": true,
+      "agents": [
+        "./agents/hwpx-builder.md",
+        "./agents/hwpx-analyzer.md"
+      ],
+      "skills": ["./skills"]
+    }
+  ]
+}
