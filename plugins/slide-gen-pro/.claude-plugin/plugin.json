@@ -1,0 +1,10 @@
+{
+  "name": "slide-gen-pro",
+  "version": "1.0.0",
+  "description": "정부/공공기관 스타일 이미지 슬라이드 생성 플러그인. 입력 문서(연구 보고서, 정책 문서, 기술 보고서)를 기반으로 4K 발표용 이미지 슬라이드를 생성한다.",
+  "author": "Joonho",
+  "keywords": ["slide", "presentation", "government", "4k", "image-generation", "visual", "발표자료", "슬라이드"],
+  "skills": [
+    "skills/slide-gen-pro/SKILL.md"
+  ]
+}
