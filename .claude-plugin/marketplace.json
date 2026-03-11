@@ -37,6 +37,15 @@
       "skills": [
         "./skills/stt-correct-pro"
       ]
+    },
+    {
+      "name": "slide-gen-pro",
+      "source": "./plugins/slide-gen-pro",
+      "description": "정부/공공기관 스타일 4K 이미지 슬라이드 생성",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/slide-gen-pro"
+      ]
     }
   ]
 }
