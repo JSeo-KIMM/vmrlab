@@ -1,0 +1,18 @@
+{
+  "name": "research-plan-pro",
+  "version": "1.1.0",
+  "description": "한국 정부 제출용 연구개발계획서 작성 보조 플러그인. 구어체 초안 마크다운을 입력받아 개조식 문체의 정식 연구목표 및 연차별 연구내용으로 변환함.",
+  "author": "Joonho",
+  "commands": [
+    "commands/research-plan.md",
+    "commands/annual-plan.md"
+  ],
+  "agents": [
+    "agents/research-plan-writer.md"
+  ],
+  "skills": [
+    "skills/research-plan-pro/writing-style.md",
+    "skills/research-plan-pro/objective-templates.md",
+    "skills/research-plan-pro/annual-plan-templates.md"
+  ]
+}

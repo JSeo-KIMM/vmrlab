@@ -1,0 +1,10 @@
+{
+  "name": "stt-correct-pro",
+  "version": "1.0.0",
+  "description": "STT(음성→텍스트) 변환 결과물 교정 플러그인. 오탈자, 맥락에 맞지 않는 단어, 군더더기를 제거하고 원래 어투를 유지하며 문장을 다듬는다.",
+  "author": "Joonho",
+  "keywords": ["stt", "transcription", "korean", "proofreading", "speech-to-text"],
+  "skills": [
+    "skills/stt-correct-pro/SKILL.md"
+  ]
+}

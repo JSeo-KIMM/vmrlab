@@ -12,7 +12,7 @@
     {
       "name": "research-paper-pro",
       "source": "./plugins/research-paper-pro",
-      "description": "Paper reviewer and converter for research proposal generation",
+      "description": "Paper reviewer and converter",
       "version": "1.0.1",
       "strict": true,
       "agents": [
@@ -22,6 +22,20 @@
       "skills": [
         "./skills/paper-pdf-to-md",
         "./skills/paper-reviewer-pro"
+      ]
+    },
+    {
+      "name": "research-plan-pro",
+      "source": "./plugins/research-plan-pro",
+      "description": "Research proposal generation"
+    },
+    {
+      "name": "stt-correct-pro",
+      "source": "./plugins/stt-correct-pro",
+      "description": "STT 변환 텍스트 교정 (오탈자, 맥락 단어, 군더더기 제거)",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/stt-correct-pro"
       ]
     }
   ]
