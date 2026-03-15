@@ -26,3 +26,6 @@ $ARGUMENTS 에서 모드와 파일 경로를 파악합니다:
 3. 결과를 논문과 동일한 폴더에 저장
    - Simple Mode → `review-simple.md`
    - Detail Mode → `review-detail.md`
+4. 생성된 영문 리뷰 결과를 번역한 한글 리뷰 파일 생성 
+   - Simple Mode → `review-simple_kor.md`
+   - Detail Mode → `review-detail_kor.md`
