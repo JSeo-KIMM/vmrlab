@@ -5,12 +5,12 @@ description: |
   SVG의 도형, 텍스트, 화살표가 파워포인트 네이티브 개체로 변환되어 개별 편집 가능합니다.
 
   사용법:
-    /slide-gen-pro:svgtopptx [입력_경로] [출력_경로.pptx]
+    /svgtopptx-pro:svgtopptx [입력_경로] [출력_경로.pptx]
 
   예시:
-    /slide-gen-pro:svgtopptx ./images/
-    /slide-gen-pro:svgtopptx ./diagram.svg
-    /slide-gen-pro:svgtopptx ./images/ ./result.pptx
+    /svgtopptx-pro:svgtopptx ./images/
+    /svgtopptx-pro:svgtopptx ./diagram.svg
+    /svgtopptx-pro:svgtopptx ./images/ ./result.pptx
 ---
 
 `$ARGUMENTS`에서 입력 경로와 (선택) 출력 경로를 파싱합니다.
