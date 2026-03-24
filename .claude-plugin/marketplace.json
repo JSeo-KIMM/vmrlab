@@ -46,6 +46,18 @@
       "skills": [
         "./skills/slide-gen-pro"
       ]
+    },
+    {
+      "name": "svgtopptx-pro",
+      "source": "./plugins/svgtopptx-pro",
+      "description": "SVG 다이어그램을 편집 가능한 PPTX(PowerPoint)로 변환",
+      "version": "1.0.0",
+      "commands": [
+        "./commands/svgtopptx.md"
+      ],
+      "skills": [
+        "./skills/svgtopptx-pro"
+      ]
     }
   ]
 }
