@@ -6,10 +6,4 @@
     "name": "Joonho"
   },
   "keywords": ["stt", "transcription", "korean", "proofreading", "speech-to-text"],
-  "commands": [
-    "commands/correct.md"
-  ],
-  "skills": [
-    "skills/stt-correct-pro/SKILL.md"
-  ]
 }
