@@ -1,11 +1,11 @@
 ---
 name: slide-gen-pro
-description: "정부 스타일 이미지 슬라이드 생성기. 입력 문서를 기반으로 정부/공공기관 발표용 4K 이미지 슬라이드를 생성한다. 구조화 모드(4-block 파이프라인)와 자유 모드(자유 형식 프롬프트) 중 선택 가능. 박사급 연구자·정부 관계자 대상의 공식 발표 자료를 만들 때 사용한다. '정부 슬라이드', '공식 발표자료', '연구 발표 슬라이드', 'gov 테마 슬라이드', '정부 스타일 PPT 이미지', '슬라이드 만들어줘' 등의 요청 시 반드시 이 스킬을 사용할 것."
+description: "정부 스타일 이미지 슬라이드 생성기. 입력 문서를 기반으로 정부/공공기관 발표용 4K 이미지 슬라이드를 생성하고 PPTX 프레젠테이션으로 변환한다. 구조화 모드(4-block 파이프라인)와 자유 모드(자유 형식 프롬프트) 중 선택 가능. 박사급 연구자·정부 관계자 대상의 공식 발표 자료를 만들 때 사용한다. '정부 슬라이드', '공식 발표자료', '연구 발표 슬라이드', 'gov 테마 슬라이드', '정부 스타일 PPT 이미지', '슬라이드 만들어줘', 'PPTX로 만들어줘' 등의 요청 시 반드시 이 스킬을 사용할 것."
 ---
 
 # 정부 스타일 이미지 슬라이드 생성기
 
-입력 문서(연구 보고서, 정책 문서, 기술 보고서 등)를 기반으로 정부/공공기관 발표용 4K 이미지 슬라이드를 생성한다.
+입력 문서(연구 보고서, 정책 문서, 기술 보고서 등)를 기반으로 정부/공공기관 발표용 4K 이미지 슬라이드를 생성하고, PPTX 프레젠테이션 파일로 변환한다.
 
 ---
 
@@ -41,6 +41,12 @@ description: "정부 스타일 이미지 슬라이드 생성기. 입력 문서�
 - 스크립트 탐색 순서: Glob(`**/visual-generator/skills/slide-renderer/scripts/generate_slide_images.py`) → 확장 Glob(`**/generate_slide_images.py`)
 - 스크립트를 찾지 못하면 자체 코드 작성 금지 — 사용자에게 경로 확인 요청
 
+### PPTX 변환 스크립트
+`png_to_pptx.py`를 사용하여 생성된 PNG 이미지를 PPTX 프레젠테이션으로 변환한다.
+- 스크립트 탐색 순서: Glob(`**/slide-gen-pro/scripts/png_to_pptx.py`) → 확장 Glob(`**/png_to_pptx.py`)
+- 의존성: `pip install python-pptx` (없으면 자동 설치 안내)
+- 각 PNG를 16:9 풀블리드 슬라이드로 삽입하고, 프롬프트 파일에서 제목을 추출하여 발표자 노트에 기록
+
 ### 에러 처리
 - API 타임아웃: 5초 대기 후 재시도 (최대 3회)
 - 이미지 데이터 없음: 5초 대기 후 재시도 (최대 3회)
@@ -68,7 +74,10 @@ description: "정부 스타일 이미지 슬라이드 생성기. 입력 문서�
 [3단계] generate_slide_images.py로 이미지 렌더링
   │
   ▼
-[4단계] 최종 검증
+[4단계] png_to_pptx.py로 PPTX 변환
+  │
+  ▼
+[5단계] 최종 검증
 ```
 
 ### 1단계: 문서 분석
@@ -140,7 +149,19 @@ PPT 슬라이드 스타일의 인포그래픽. 정부 국가연구개발 과제 
 
 프롬프트 파일들을 `prompts/` 폴더에 저장하고 `generate_slide_images.py`로 렌더링한다.
 
-### 4단계: 최종 검증
+### 4단계: PPTX 변환
+
+생성된 PNG 이미지를 PPTX 프레젠테이션으로 변환한다.
+
+```bash
+python png_to_pptx.py ./slides/images --prompts ./slides/prompts --title "발표 제목" --output ./slides/presentation.pptx
+```
+
+- 각 PNG가 16:9 풀블리드 슬라이드로 삽입된다
+- `--prompts` 옵션을 지정하면 프롬프트 파일에서 슬라이드 제목을 추출하여 발표자 노트에 기록
+- `--title` 옵션으로 프레젠테이션 메타데이터 제목 설정
+
+### 5단계: 최종 검증
 
 렌더링 완료 후 아래 검증을 수행한다 (공통 검증 절차 참조).
 
@@ -157,6 +178,7 @@ PPT 슬라이드 스타일의 인포그래픽. 정부 국가연구개발 과제 
 │   ├── 01_표지.png
 │   ├── 02_현황.png
 │   └── ...
+├── presentation.pptx          ← PPTX 출력
 └── verification_report.md
 ```
 
@@ -188,7 +210,10 @@ visual-generator 에이전트 파이프라인을 gov 테마 기본값으로 오�
 [5단계] renderer-agent ────── PNG 이미지 파일들 (4K 3840×2160)
   │
   ▼
-[6단계] 최종 검증 ──────────── verification_report.md (PASS/FAIL)
+[6단계] png_to_pptx.py ────── presentation.pptx
+  │
+  ▼
+[7단계] 최종 검증 ──────────── verification_report.md (PASS/FAIL)
 ```
 
 ### 1단계: 콘텐츠 분석 (content-organizer)
@@ -250,7 +275,19 @@ prompt-validator 에이전트를 호출하여 3단계 프롬프트의 품질을 
 
 renderer-agent를 호출하여 검증 통과한 프롬프트를 4K PNG 이미지로 렌더링한다.
 
-### 6단계: 최종 검증
+### 6단계: PPTX 변환
+
+생성된 PNG 이미지를 PPTX 프레젠테이션으로 변환한다.
+
+```bash
+python png_to_pptx.py ./slides/images --prompts ./slides/prompts --title "발표 제목" --output ./slides/presentation.pptx
+```
+
+- 각 PNG가 16:9 풀블리드 슬라이드로 삽입된다
+- `--prompts` 옵션을 지정하면 프롬프트 파일에서 슬라이드 제목을 추출하여 발표자 노트에 기록
+- `--title` 옵션으로 프레젠테이션 메타데이터 제목 설정
+
+### 7단계: 최종 검증
 
 렌더링 완료 후 아래 검증을 수행한다 (공통 검증 절차 참조).
 
@@ -271,8 +308,9 @@ renderer-agent를 호출하여 검증 통과한 프롬프트를 4K PNG 이미지
 │   ├── 01_org_network.png
 │   ├── 02_swimlane.png
 │   └── ...
+├── presentation.pptx        ← 6단계 PPTX 출력
 ├── generation_report.md     ← 5단계 렌더링 리포트
-└── verification_report.md   ← 6단계 최종 검증 보고서
+└── verification_report.md   ← 7단계 최종 검증 보고서
 ```
 
 ---
@@ -290,6 +328,7 @@ renderer-agent를 호출하여 검증 통과한 프롬프트를 4K PNG 이미지
 | 슬라이드 수 일치 | 프롬프트 파일 수 vs 생성 이미지 수 비교 | 모든 프롬프트에 대응하는 이미지 존재 |
 | 파일 무결성 | 각 PNG 파일의 크기 > 0 바이트 확인 | 0바이트 파일 없음 |
 | 해상도 확인 | Pillow로 각 이미지 크기 확인 | 16:9 비율 |
+| PPTX 생성 확인 | presentation.pptx 파일 존재 및 크기 > 0 | PPTX 파일 정상 생성 |
 
 **검증 스크립트** (인라인 실행):
 ```python
@@ -393,11 +432,11 @@ YYYY-MM-DD HH:MM
 
 **Example 1 (자유 모드):**
 입력: "이 연구 보고서를 발표용 슬라이드로 만들어줘" + 연구보고서.md
-→ 모드 선택 질문 → 사용자: "A" → 7장의 자유 형식 4K PNG 이미지 + verification_report.md
+→ 모드 선택 질문 → 사용자: "A" → 7장의 4K PNG 이미지 + presentation.pptx + verification_report.md
 
 **Example 2 (구조화 모드):**
 입력: "디지털 전환 슬라이드 만들어줘, 중간 산출물도 필요해" + 추진현황.md
-→ 모드 선택 질문 → 사용자: "B" → 5장의 4-block 기반 이미지 + 중간 산출물 + verification_report.md
+→ 모드 선택 질문 → 사용자: "B" → 5장의 4-block 기반 이미지 + presentation.pptx + 중간 산출물 + verification_report.md
 
 **Example 3 (기본값 = 자유 모드):**
 입력: "이거 슬라이드로 만들어줘" + AI전략.md
