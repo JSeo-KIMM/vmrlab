@@ -1,0 +1,9 @@
+{
+  "name": "idea-gen-pro",
+  "version": "1.0.0",
+  "description": "연구·공학 아이디어를 비판적으로 검토하고 발전시키는 플러그인. 타당성 평가, 약점 분석, 보완 방안, 선행연구·특허 조사, 최종 GO/PIVOT/KILL 판정까지 6단계로 수행한다.",
+  "author": {
+    "name": "Joonho"
+  },
+  "keywords": ["research", "idea", "validation", "prior-art", "feasibility", "rnd", "proposal"]
+}

@@ -46,6 +46,15 @@
       "skills": [
         "./skills/slide-gen-pro"
       ]
+    },
+    {
+      "name": "idea-gen-pro",
+      "source": "./plugins/idea-gen-pro",
+      "description": "연구·공학 아이디어 비판적 검토(타당성·약점·보완·선행연구·판정)",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/idea-develop-pro"
+      ]
     }
   ]
 }
