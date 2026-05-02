@@ -1,0 +1,9 @@
+{
+  "name": "pptx-diagram-pro",
+  "version": "1.0.0",
+  "description": "연구 내용·프로세스·아이디어를 자연어 또는 구조화 입력으로 받아 정부/공공기관 톤의 PPTX 다이어그램(플로우차트·시스템 아키텍처)으로 렌더링한다. python-pptx 네이티브 도형 모드와 Gemini 이미지 모드를 모두 지원한다.",
+  "author": {
+    "name": "Joonho"
+  },
+  "keywords": ["pptx", "diagram", "flowchart", "architecture", "research", "gov-style", "python-pptx", "gemini"]
+}

@@ -55,6 +55,15 @@
       "skills": [
         "./skills/idea-develop-pro"
       ]
+    },
+    {
+      "name": "pptx-diagram-pro",
+      "source": "./plugins/pptx-diagram-pro",
+      "description": "연구·프로세스·아이디어를 정부 톤 PPTX 다이어그램으로 (네이티브 도형 + Gemini 이미지 두 모드)",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/pptx-diagram-pro"
+      ]
     }
   ]
 }
