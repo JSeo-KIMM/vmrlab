@@ -1,0 +1,8 @@
+{
+  "name": "invention-disclosure-form-pro",
+  "version": "1.0.0",
+  "description": "KIMM 직무발명 내용 설명서 작성 보조 플러그인. 새로운 발명 아이디어를 입력받아 KIMM 양식에 맞춘 직무발명 내용 설명서 초안을 작성한다. 부족한 정보는 사용자에게 질문하며 보완하고, 필요시 도면/다이어그램을 위한 편집 가능한 pptx 파일을 동일 폴더에 생성한다.",
+  "author": {
+    "name": "Joonho"
+  }
+}

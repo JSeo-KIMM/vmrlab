@@ -64,6 +64,18 @@
       "skills": [
         "./skills/pptx-diagram-pro"
       ]
+    },
+    {
+      "name": "invention-disclosure-form-pro",
+      "source": "./plugins/invention-disclosure-form-pro",
+      "description": "KIMM 직무발명 내용 설명서 작성 (양식 6개 항목 + ~함체 스타일 + 도면 pptx)",
+      "version": "1.0.0",
+      "agents": [
+        "./agents/invention-drafter.md"
+      ],
+      "skills": [
+        "./skills/invention-disclosure-form-pro"
+      ]
     }
   ]
 }
