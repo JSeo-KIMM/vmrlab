@@ -1,0 +1,9 @@
+{
+  "name": "business-trip-plan-pro",
+  "version": "1.0.0",
+  "description": "KIMM 국외출장 계획서(별지 2) 작성 보조 플러그인. 출장 장소/날짜/행사명 등 핵심 정보를 입력받아 KIMM 표준 양식의 6개 항목(출장목적/출장일정/최근3년실적/파악수행내용/출장예산/반출장비)으로 정리한다. 부족한 정보는 사용자에게 질문하며 보완하고, 동행자 정보가 있으면 일정표를 자동 분배한다.",
+  "author": {
+    "name": "Joonho Seo",
+    "url": "https://github.com/JSeo-KIMM"
+  }
+}
