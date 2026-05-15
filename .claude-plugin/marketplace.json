@@ -5,23 +5,27 @@
     "url": "https://github.com/JSeo-KIMM"
   },
   "metadata": {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "연구계획서 생성, 시각자료 성성 마켓플레이스"
   },
   "plugins": [
     {
       "name": "research-paper-pro",
       "source": "./plugins/research-paper-pro",
-      "description": "Paper reviewer and converter",
-      "version": "1.0.1",
+      "description": "Paper reviewer, converter, reviser, and Korean draft polisher",
+      "version": "1.2.0",
       "strict": true,
       "agents": [
         "./agents/paper-converter.md",
-        "./agents/paper-reviewer.md"
+        "./agents/paper-reviewer.md",
+        "./agents/paper-reviser.md",
+        "./agents/paper-drafter.md"
       ],
       "skills": [
         "./skills/paper-pdf-to-md",
-        "./skills/paper-reviewer-pro"
+        "./skills/paper-reviewer-pro",
+        "./skills/paper-reviser-pro",
+        "./skills/paper-draft-pro"
       ]
     },
     {
