@@ -1,9 +1,9 @@
 {
   "name": "research-paper-pro",
-  "description": "Academic paper toolkit for robotics and kinematics research: convert PDF papers to Obsidian-compatible Markdown, perform rigorous PhD-level peer review, and revise papers based on review feedback.",
-  "version": "1.2.0",
+  "description": "Academic paper toolkit for robotics and kinematics research: convert PDF papers to Obsidian-compatible Markdown, perform rigorous PhD-level peer review, revise papers based on review feedback, polish casual Korean drafts into academic Markdown, and convert drafts into journal/conference template-formatted Word documents.",
+  "version": "1.3.0",
   "author": {
     "name": "Joonho"
   },
-  "keywords": ["paper-review", "paper-revise", "pdf-convert", "robotics", "kinematics", "academic", "obsidian", "markdown"]
+  "keywords": ["paper-review", "paper-revise", "pdf-convert", "paper-draft", "style-conversion", "docx", "robotics", "kinematics", "academic", "obsidian", "markdown"]
 }

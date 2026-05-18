@@ -12,20 +12,22 @@
     {
       "name": "research-paper-pro",
       "source": "./plugins/research-paper-pro",
-      "description": "Paper reviewer, converter, reviser, and Korean draft polisher",
-      "version": "1.2.0",
+      "description": "Paper reviewer, converter, reviser, Korean draft polisher, and journal/conference template style converter",
+      "version": "1.3.0",
       "strict": true,
       "agents": [
         "./agents/paper-converter.md",
         "./agents/paper-reviewer.md",
         "./agents/paper-reviser.md",
-        "./agents/paper-drafter.md"
+        "./agents/paper-drafter.md",
+        "./agents/paper-style-converter.md"
       ],
       "skills": [
         "./skills/paper-pdf-to-md",
         "./skills/paper-reviewer-pro",
         "./skills/paper-reviser-pro",
-        "./skills/paper-draft-pro"
+        "./skills/paper-draft-pro",
+        "./skills/paper-style-conversion-pro"
       ]
     },
     {

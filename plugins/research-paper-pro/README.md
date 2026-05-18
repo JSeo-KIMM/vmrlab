@@ -10,6 +10,7 @@ Academic paper toolkit for robotics and kinematics research.
 | `/research-paper-pro:convert <file>` | Convert PDF to Obsidian-compatible Markdown |
 | `/research-paper-pro:revise <review> <paper>` | Apply tracked revisions based on a review file |
 | `/research-paper-pro:paper-draft-pro <draft>` | Polish a casual Korean draft into academic Markdown (optional EN version) |
+| `/research-paper-pro:paper-style-conversion-pro <draft> <template>` | Convert a draft .md into a .docx formatted to a journal/conference template |
 
 ## Examples
 
@@ -26,6 +27,9 @@ Academic paper toolkit for robotics and kinematics research.
 
 # Polish a Korean draft into an academic-style manuscript
 /research-paper-pro:paper-draft-pro ./my_draft.md
+
+# Convert a draft into a journal/conference template-formatted .docx
+/research-paper-pro:paper-style-conversion-pro ./my_draft.md ./journal_form.docx
 ```
 
 ## Components
@@ -34,20 +38,29 @@ Academic paper toolkit for robotics and kinematics research.
 - **commands/convert.md** — Entry point for PDF conversion
 - **commands/revise.md** — Entry point for revision based on review
 - **commands/paper-draft-pro.md** — Entry point for Korean draft polishing
+- **commands/paper-style-conversion-pro.md** — Entry point for template style conversion
 - **agents/paper-reviewer.md** — Robotics & kinematics PhD reviewer agent
 - **agents/paper-converter.md** — PDF-to-Markdown conversion agent
 - **agents/paper-reviser.md** — Tracked-changes revision agent
 - **agents/paper-drafter.md** — Korean draft polishing agent
+- **agents/paper-style-converter.md** — Template style conversion agent
 - **skills/paper-reviewer-pro/** — Review criteria, checklist, and output format
 - **skills/paper-pdf-to-md/** — Conversion rules and Obsidian formatting
 - **skills/paper-pdf-to-md/scripts/extract_images.py** — Figure extraction script
 - **skills/paper-reviser-pro/** — Tracked-changes revision rules
 - **skills/paper-draft-pro/** — Korean draft polishing rules (word count control, [] directive handling, EN translation)
+- **skills/paper-style-conversion-pro/** — Template style conversion rules (template analysis, style mapping, native Word equations)
+- **skills/paper-style-conversion-pro/scripts/analyze_template.py** — Template style/margin analyzer
+- **skills/paper-style-conversion-pro/scripts/build_paper.py** — Spec-JSON-to-.docx builder with LaTeX→OMML equations
 
 ## Requirements
 
 ```bash
+# PDF conversion
 pip install pymupdf
+
+# Template style conversion (paper-style-conversion-pro)
+pip install python-docx lxml latex2mathml mathml2omml
 ```
 
 ## Installation
