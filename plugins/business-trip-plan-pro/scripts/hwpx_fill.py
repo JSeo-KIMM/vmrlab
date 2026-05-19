@@ -10,6 +10,8 @@ HWPX는 ZIP + XML 구조이며, 본문은 `Contents/section0.xml`에 들어 있�
   expand-rows  표의 특정 행을 복제해 행 수를 늘림 (출장일정/3년실적 표용)
   set-cell     표의 특정 셀(행,열) 텍스트를 교체 (여러 줄 지원)
   insert-para  특정 텍스트를 가진 문단 뒤에 본문 문단을 삽입 (1번/4번 항목용)
+  format       서식 일괄 적용 — 번호 제목 볼드 / 줄간격 120% / 출장일정 표 속성
+               / 모든 표 셀 가운데 정렬 (모든 채우기 작업이 끝난 뒤 마지막에 실행)
 
 사용법:
   python hwpx_fill.py dump <hwpx>
@@ -18,6 +20,7 @@ HWPX는 ZIP + XML 구조이며, 본문은 `Contents/section0.xml`에 들어 있�
   python hwpx_fill.py set-cell <src.hwpx> <dst.hwpx> --table-id ID --row R --col C --text "내용"
   python hwpx_fill.py set-cell ... --text-file 내용.txt   (여러 줄은 파일로 전달 권장)
   python hwpx_fill.py insert-para <src.hwpx> <dst.hwpx> --anchor "1. 출장목적" --text-file 본문.txt
+  python hwpx_fill.py format <src.hwpx> <dst.hwpx> --schedule-table-id ID
 
 표 id와 행/열 좌표는 먼저 `dump`로 확인한다.
 편집은 항상 src → dst로 새 파일을 만든다 (원본 양식 보존).
@@ -30,26 +33,46 @@ import sys
 import zipfile
 
 SECTION = "Contents/section0.xml"
+HEADER = "Contents/header.xml"
+
+# 별지 제2호 6개 표준 항목 제목 (공백 제거 후 비교 — '2. 출장 일정' == '2.출장일정')
+SECTION_HEADINGS = [
+    "1. 출장목적",
+    "2. 출장일정",
+    "3. 최근 3년간 국외출장 실적",
+    "4. 출장중 파악(수행)해야 할 내용",
+    "5. 출장예산",
+    "6. 연구관련 반출 예정 전산장비 및 자료 현황",
+]
 
 
 # ---------------------------------------------------------------- ZIP helpers
-def _read_section(path):
+def _read_part(path, part):
     with zipfile.ZipFile(path) as z:
-        return z.read(SECTION).decode("utf-8")
+        return z.read(part).decode("utf-8")
 
 
-def _write_section(src, dst, xml):
-    """src의 모든 파트를 복사하되 section0.xml만 교체해 dst로 저장."""
+def _read_section(path):
+    return _read_part(path, SECTION)
+
+
+def _write_parts(src, dst, parts):
+    """src의 모든 파트를 복사하되 parts({파트명: 새 XML})만 교체해 dst로 저장."""
     tmp = dst + ".tmp"
     with zipfile.ZipFile(src) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
         for item in zin.infolist():
             data = zin.read(item.filename)
-            if item.filename == SECTION:
-                data = xml.encode("utf-8")
+            if item.filename in parts:
+                data = parts[item.filename].encode("utf-8")
             zout.writestr(item, data)
     if os.path.exists(dst):
         os.remove(dst)
     os.rename(tmp, dst)
+
+
+def _write_section(src, dst, xml):
+    """src의 모든 파트를 복사하되 section0.xml만 교체해 dst로 저장."""
+    _write_parts(src, dst, {SECTION: xml})
 
 
 def _esc(text):
@@ -242,6 +265,143 @@ def cmd_insert_para(args):
     print(f"[완료] {args.anchor!r} 뒤에 {len(lines)}개 문단 삽입 → {args.dst}")
 
 
+# ----------------------------------------------------------------- format
+def _norm(text):
+    """공백을 모두 제거해 제목 비교를 너그럽게 한다."""
+    return re.sub(r"\s+", "", text)
+
+
+def _bump_itemcnt(header, container):
+    """<hh:charProperties itemCnt="N"> 등의 항목 수를 1 증가."""
+    return re.sub(r'(<hh:%s itemCnt=")(\d+)(")' % container,
+                  lambda m: m.group(1) + str(int(m.group(2)) + 1) + m.group(3),
+                  header, count=1)
+
+
+def _set_attr(tag, name, value):
+    """여는 태그 문자열에서 속성을 교체하거나, 없으면 추가."""
+    pat = r'\b' + re.escape(name) + r'="[^"]*"'
+    if re.search(pat, tag):
+        return re.sub(pat, '%s="%s"' % (name, value), tag, count=1)
+    if tag.endswith("/>"):
+        return tag[:-2] + ' %s="%s"/>' % (name, value)
+    return tag[:-1] + ' %s="%s">' % (name, value)
+
+
+def _para_text(p_xml):
+    """문단 XML에서 순수 텍스트만 추출."""
+    joined = "".join(re.findall(r"<hp:t>(.*?)</hp:t>", p_xml, re.S))
+    return re.sub(r"<[^>]+>", "", joined)
+
+
+def cmd_format(args):
+    """채우기가 끝난 hwpx에 서식을 일괄 적용한다.
+
+    1) 번호 붙은 표준 항목 제목(1.출장목적 ~ 6.…)을 볼드 처리
+    2) 모든 문단의 줄간격을 지정값(기본 120%)으로 통일
+    3) 출장일정 표: 글자처럼 취급 안 함 + 자리차지 배치 + 쪽 경계에서 나눔
+    4) 모든 표 셀 안의 문단을 가운데 정렬
+
+    제목 볼드와 셀 정렬은 header.xml의 글자/문단 모양을 새로 만들어
+    원본 모양은 건드리지 않고 안전하게 적용한다.
+    """
+    section = _read_section(args.src)
+    header = _read_part(args.src, HEADER)
+    ls = args.line_spacing
+
+    # ---- (2) 줄간격 모두 지정값(%)으로 통일 ----
+    # paraPr 마다 <hp:case>/<hp:default> 두 곳에 lineSpacing이 들어 있어 모두 교체한다.
+    header = re.sub(
+        r'<hh:lineSpacing\b[^>]*/>',
+        '<hh:lineSpacing type="PERCENT" value="%d" unit="HWPUNIT"/>' % ls,
+        header)
+
+    # ---- (1) 번호 제목 볼드 ----
+    targets = {_norm(h) for h in SECTION_HEADINGS}
+
+    heading_charprs = set()
+    for m in re.finditer(r"<hp:p\b[^>]*>.*?</hp:p>", section, re.S):
+        if _norm(_para_text(m.group(0))) in targets:
+            heading_charprs.update(re.findall(r'charPrIDRef="(\d+)"', m.group(0)))
+
+    bold_map = {}                       # 원본 charPr id -> 볼드 charPr id
+    next_char_id = max((int(x) for x in re.findall(r'<hh:charPr id="(\d+)"', header)),
+                       default=-1) + 1
+    for cid in sorted(heading_charprs, key=int):
+        cm = re.search(r'<hh:charPr id="%s".*?</hh:charPr>' % cid, header, re.S)
+        if not cm:
+            continue
+        block = cm.group(0)
+        if "<hh:bold" in block:         # 이미 볼드면 그대로 사용
+            bold_map[cid] = cid
+            continue
+        clone = block.replace('id="%s"' % cid, 'id="%d"' % next_char_id, 1)
+        clone = clone.replace("<hh:underline", "<hh:bold/><hh:underline", 1)
+        header = header.replace("</hh:charProperties>", clone + "</hh:charProperties>", 1)
+        header = _bump_itemcnt(header, "charProperties")
+        bold_map[cid] = str(next_char_id)
+        next_char_id += 1
+
+    def _bold_heading(m):
+        p = m.group(0)
+        if _norm(_para_text(p)) not in targets:
+            return p
+        return re.sub(r'(<hp:run charPrIDRef=")(\d+)(")',
+                      lambda r: r.group(1) + bold_map.get(r.group(2), r.group(2)) + r.group(3),
+                      p)
+    section = re.sub(r"<hp:p\b[^>]*>.*?</hp:p>", _bold_heading, section, flags=re.S)
+
+    # ---- (3) 출장일정 표 속성 ----
+    if args.schedule_table_id:
+        ts, te = _find_table(section, args.schedule_table_id)
+        tbl = section[ts:te]
+        tm = re.match(r"<hp:tbl\b[^>]*>", tbl)
+        tag = tm.group(0)
+        tag = _set_attr(tag, "textWrap", "TOP_AND_BOTTOM")   # 본문과의 배치: 자리차지
+        tag = _set_attr(tag, "pageBreak", "TABLE")           # 쪽 경계에서: 나눔
+        tbl = tag + tbl[tm.end():]
+        # <hp:pos treatAsChar="..."> → 0 (글자처럼 취급 안 함)
+        if re.search(r'<hp:pos\b[^>]*\btreatAsChar="', tbl):
+            tbl = re.sub(r'(<hp:pos\b[^>]*\btreatAsChar=")\d+(")', r"\g<1>0\g<2>", tbl, count=1)
+        section = section[:ts] + tbl + section[te:]
+        print(f"[적용] 출장일정 표({args.schedule_table_id}): 자리차지/나눔/글자취급해제")
+    else:
+        print("[안내] --schedule-table-id 미지정 — 출장일정 표 속성 변경 건너뜀", file=sys.stderr)
+
+    # ---- (4) 모든 표 셀 내용 가운데 정렬 ----
+    cell_paraprs = set()
+    for tc in re.finditer(r"<hp:tc\b.*?</hp:tc>", section, re.S):
+        cell_paraprs.update(re.findall(r'<hp:p\b[^>]*\bparaPrIDRef="(\d+)"', tc.group(0)))
+
+    center_map = {}                     # 원본 paraPr id -> 가운데정렬 paraPr id
+    next_para_id = max((int(x) for x in re.findall(r'<hh:paraPr id="(\d+)"', header)),
+                       default=-1) + 1
+    for pid in sorted(cell_paraprs, key=int):
+        pm = re.search(r'<hh:paraPr id="%s".*?</hh:paraPr>' % pid, header, re.S)
+        if not pm:
+            continue
+        block = pm.group(0)
+        am = re.search(r'<hh:align horizontal="([^"]*)"', block)
+        if am and am.group(1) == "CENTER":      # 이미 가운데면 그대로 사용
+            center_map[pid] = pid
+            continue
+        clone = block.replace('id="%s"' % pid, 'id="%d"' % next_para_id, 1)
+        clone = re.sub(r'(<hh:align horizontal=")[^"]*(")', r"\g<1>CENTER\g<2>", clone, count=1)
+        header = header.replace("</hh:paraProperties>", clone + "</hh:paraProperties>", 1)
+        header = _bump_itemcnt(header, "paraProperties")
+        center_map[pid] = str(next_para_id)
+        next_para_id += 1
+
+    def _center_cell(m):
+        return re.sub(r'(<hp:p\b[^>]*\bparaPrIDRef=")(\d+)(")',
+                      lambda r: r.group(1) + center_map.get(r.group(2), r.group(2)) + r.group(3),
+                      m.group(0))
+    section = re.sub(r"<hp:tc\b.*?</hp:tc>", _center_cell, section, flags=re.S)
+
+    _write_parts(args.src, args.dst, {SECTION: section, HEADER: header})
+    print(f"[완료] 서식 적용 (제목 볼드 / 줄간격 {ls}% / 표 셀 가운데 정렬) → {args.dst}")
+
+
 # ----------------------------------------------------------------------- CLI
 def main():
     ap = argparse.ArgumentParser(description="HWPX 양식 채우기 도구")
@@ -277,6 +437,14 @@ def main():
     p.add_argument("--text", default=None)
     p.add_argument("--text-file", default=None, help="여러 줄 내용을 담은 텍스트 파일")
     p.set_defaults(func=cmd_insert_para)
+
+    p = sub.add_parser("format", help="서식 일괄 적용(제목 볼드/줄간격/표 속성/셀 정렬)")
+    p.add_argument("src"); p.add_argument("dst")
+    p.add_argument("--schedule-table-id", default=None,
+                   help="출장일정 표 id (dump로 확인). 지정 시 자리차지/나눔/글자취급해제 적용")
+    p.add_argument("--line-spacing", type=int, default=120,
+                   help="줄간격 백분율 (기본 120)")
+    p.set_defaults(func=cmd_format)
 
     args = ap.parse_args()
     args.func(args)

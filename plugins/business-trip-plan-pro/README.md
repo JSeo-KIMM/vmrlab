@@ -99,7 +99,7 @@ business-trip-plan-pro/
 │           ├── budget-calculator.md      # 등급지별 여비 산식
 │           └── hwpx-output.md            # hwpx 양식 채우기 절차
 ├── scripts/
-│   ├── hwpx_fill.py                      # hwpx dump/치환/행추가/셀설정/문단삽입
+│   ├── hwpx_fill.py                      # hwpx dump/치환/행추가/셀설정/문단삽입/서식적용
 │   ├── pdf_to_png.py                     # PDF(인보이스·논문) → PNG
 │   └── capture_web.py                    # 행사 홈페이지 헤드리스 스크린샷
 ├── assets/

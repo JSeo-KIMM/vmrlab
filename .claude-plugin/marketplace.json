@@ -86,8 +86,8 @@
     {
       "name": "business-trip-plan-pro",
       "source": "./plugins/business-trip-plan-pro",
-      "description": "KIMM 국외출장 계획서(별지 제2호) 작성 (출장유형 선택 + 필수파일 점검 + 행사 웹조사 + 양식 6개 항목 + ~함체 스타일 + hwpx 양식 자동 작성)",
-      "version": "2.0.0",
+      "description": "KIMM 국외출장 계획서(별지 제2호) 작성 (출장유형 선택 + 필수파일 점검 + 행사 웹조사 + 양식 6개 항목 + ~함체 스타일 + hwpx 양식 자동 작성 + 서식 일괄 적용)",
+      "version": "2.1.0",
       "agents": [
         "./agents/business-trip-drafter.md"
       ],

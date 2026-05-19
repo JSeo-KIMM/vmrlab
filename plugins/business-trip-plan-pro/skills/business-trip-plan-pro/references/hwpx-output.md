@@ -27,7 +27,8 @@
 ## 2. 작업 순서
 
 편집은 항상 `src → dst`로 새 파일을 만들며 단계별로 사본을 이어간다
-(`work1.hwpx → work2.hwpx → ...`, 마지막을 최종 파일명으로).
+(`work1.hwpx → work2.hwpx → ...`). 내용 채우기(Step 1~7)를 모두 마친 뒤
+**Step 8 `format`을 마지막에 실행해 그 출력이 최종 파일**이 된다.
 
 ### Step 1 — 본문 치환 (replace)
 
@@ -100,6 +101,27 @@ python scripts/hwpx_fill.py set-cell ... --table-id 1081106546 --row 4 --col 1 -
 
 **건드리지 않는다.** 양식 기본값 그대로 둔다.
 
+### Step 8 — 서식 일괄 적용 (format)
+
+모든 내용 채우기가 끝난 **마지막에 한 번** 실행한다. 셀/문단을 새로 만든
+뒤에 돌려야 새 내용에도 서식이 적용되므로 반드시 마지막 단계다.
+
+```bash
+python scripts/hwpx_fill.py format work_last.hwpx 최종.hwpx --schedule-table-id 1081106548
+```
+
+`--schedule-table-id`에는 **Step 4의 출장일정 표 id**(dump로 확인한 값)를 넣는다.
+이 한 번의 명령이 다음 네 가지를 적용한다:
+
+1. **번호 제목 볼드** — `1. 출장목적` ~ `6. …` 6개 표준 항목 제목을 굵게.
+2. **줄간격 120%** — 모든 문단의 줄간격을 120%로 통일 (`--line-spacing`으로 변경 가능).
+3. **출장일정 표 속성** — 글자처럼 취급 안 함 / 본문과의 배치 "자리차지" /
+   여러 쪽 지원 쪽 경계에서 "나눔".
+4. **표 셀 가운데 정렬** — 모든 표의 모든 셀 안 문단을 가운데 정렬.
+
+제목 볼드와 셀 정렬은 `header.xml`에 글자/문단 모양을 새로 추가하는 방식이라
+원본 모양을 훼손하지 않는다. 출력은 항상 새 파일(`src → dst`)이다.
+
 ## 3. 이미지 자리표시
 
 사용자 선택에 따라 이미지는 hwpx에 직접 삽입하지 않는다. 대신:
@@ -109,10 +131,11 @@ python scripts/hwpx_fill.py set-cell ... --table-id 1081106546 --row 4 --col 1 -
 
 ## 4. 검증 및 마무리
 
-각 단계 후, 최소한 마지막에 XML이 깨지지 않았는지 확인한다:
+각 단계 후, 최소한 마지막에 XML이 깨지지 않았는지 확인한다.
+`format` 단계는 `header.xml`도 수정하므로 두 파트를 함께 검사한다:
 
 ```bash
-python -c "import zipfile,xml.dom.minidom as M; M.parseString(zipfile.ZipFile('최종.hwpx').read('Contents/section0.xml')); print('OK')"
+python -c "import zipfile,xml.dom.minidom as M; z=zipfile.ZipFile('최종.hwpx'); M.parseString(z.read('Contents/section0.xml')); M.parseString(z.read('Contents/header.xml')); print('OK')"
 ```
 
 - 최종 파일명: `국외출장계획서_<YYYY>_<신청자명>_<요약>.hwpx`
