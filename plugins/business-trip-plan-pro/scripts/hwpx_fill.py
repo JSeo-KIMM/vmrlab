@@ -7,9 +7,12 @@ HWPX는 ZIP + XML 구조이며, 본문은 `Contents/section0.xml`에 들어 있�
 기능:
   dump         양식 내 모든 텍스트를 표/셀 좌표와 함께 출력 (치환 매핑 작성용)
   replace      {옛텍스트: 새텍스트} 매핑(JSON)을 일괄 치환
-  expand-rows  표의 특정 행을 복제해 행 수를 늘림 (출장일정/3년실적 표용)
+  expand-rows  표의 특정 행을 복제해 행 수를 늘림 (3년실적 표 등 평면 표용)
   set-cell     표의 특정 셀(행,열) 텍스트를 교체 (여러 줄 지원)
+  build-schedule  출장일정 표를 JSON으로부터 7열 병합 표로 통째로 재구성
+                  (셀 병합 rowspan/colspan — set-cell로는 불가능)
   insert-para  특정 텍스트를 가진 문단 뒤에 본문 문단을 삽입 (1번/4번 항목용)
+  delete-para  특정 텍스트를 가진 문단을 삭제 (양식 기본 문구 제거용)
   format       서식 일괄 적용 — 번호 제목 볼드 / 줄간격 120% / 출장일정 표 속성
                / 모든 표 셀 가운데 정렬 (모든 채우기 작업이 끝난 뒤 마지막에 실행)
 
@@ -17,6 +20,7 @@ HWPX는 ZIP + XML 구조이며, 본문은 `Contents/section0.xml`에 들어 있�
   python hwpx_fill.py dump <hwpx>
   python hwpx_fill.py replace <src.hwpx> <dst.hwpx> <map.json>
   python hwpx_fill.py expand-rows <src.hwpx> <dst.hwpx> --table-id ID --row N --count K
+  python hwpx_fill.py build-schedule <src.hwpx> <dst.hwpx> --table-id ID --data days.json
   python hwpx_fill.py set-cell <src.hwpx> <dst.hwpx> --table-id ID --row R --col C --text "내용"
   python hwpx_fill.py set-cell ... --text-file 내용.txt   (여러 줄은 파일로 전달 권장)
   python hwpx_fill.py insert-para <src.hwpx> <dst.hwpx> --anchor "1. 출장목적" --text-file 본문.txt
@@ -31,6 +35,14 @@ import os
 import re
 import sys
 import zipfile
+
+# Windows 콘솔 기본 코드페이지(cp949)는 — 〜 등 일부 유니코드를 못 찍어
+# 작업이 끝난 뒤 print에서 죽는다. 표준출력/에러를 UTF-8로 돌려 막는다.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 SECTION = "Contents/section0.xml"
 HEADER = "Contents/header.xml"
@@ -121,11 +133,18 @@ def cmd_dump(args):
                 print(f"   ({addr.group(2)},{addr.group(1)})  {txt!r}")
         print()
     # 표 밖 본문 텍스트
-    print("[본문 텍스트]")
-    for t in re.findall(r"<hp:t>(.*?)</hp:t>", xml, re.S):
-        t = re.sub(r"<[^>]+>", "", t)
-        if t.strip():
-            print(f"   {t!r}")
+    # <hp:t> 안에는 <hp:fwSpace/>(전각공백)·<hp:tab/> 같은 인라인 태그가 섞일 수 있다.
+    # replace는 XML 문자열을 그대로 치환하므로, 그런 태그가 있으면 태그까지 포함한
+    # 원본 문자열을 키로 써야 한다. 정리된 텍스트와 다르면 [replace 키]를 함께 보여준다.
+    print("[본문 텍스트]   (정리된 텍스트 / 인라인 태그가 있으면 replace 키 별도 표기)")
+    for raw in re.findall(r"<hp:t>(.*?)</hp:t>", xml, re.S):
+        clean = re.sub(r"<[^>]+>", "", raw)
+        if not clean.strip():
+            continue
+        if raw != clean:
+            print(f"   {clean!r}   [replace 키: {raw!r}]")
+        else:
+            print(f"   {clean!r}")
 
 
 # ------------------------------------------------------------------- replace
@@ -232,6 +251,161 @@ def cmd_set_cell(args):
     print(f"[완료] 표 {args.table_id} 셀 ({args.row},{args.col}) 설정 → {args.dst}")
 
 
+# ------------------------------------------------------------ build-schedule
+# 출장일정 표는 셀 병합이 필요해 set-cell로는 만들 수 없다 (set-cell은 평면 격자 전용).
+# build-schedule는 양식의 출장일정 표를 통째로 7열 병합 표로 다시 만든다.
+# 마크다운 초안의 HTML <table>(rowspan/colspan)과 같은 모양이 되도록,
+# 동행 2인 이상인 행사일은 인원수만큼 그리드 행으로 나누고 날짜·장소 칸은 rowSpan으로 묶는다.
+#
+# HWPX(OWPML) 표 병합 규칙:
+#  - <hp:tbl rowCnt colCnt>는 그리드(논리) 행/열 수.
+#  - 병합으로 가려진 칸은 <hp:tc>를 아예 쓰지 않는다 (그 행의 <hp:tr>에서 생략).
+#  - 각 <hp:tc>는 <hp:cellAddr>로 자기 그리드 좌표(colAddr,rowAddr)를 명시한다.
+#  - 병합 셀은 <hp:cellSpan colSpan rowSpan>으로 차지 범위를 표시한다.
+
+# 7열 폭(HWPUNIT). 합계는 양식 원래 표 폭(48464)과 같아야 한다.
+#   0 월일  1 출발지  2 도착지  3 방문기관  4 업무수행내용  5 담당자  6 면담예정자
+SCHED_COL_W = [4764, 5048, 5332, 10728, 11436, 2700, 8456]
+SCHED_HEADER_H = 2680   # 머리글 행 높이
+SCHED_ROW_H = 2800      # 데이터 그리드 행 1줄 높이 (한글이 내용에 맞게 다시 계산함)
+
+
+def _sched_cell(col, row, colspan, rowspan, width, height, lines, header=False):
+    """출장일정 표의 <hp:tc> 한 칸을 만든다. lines는 줄 목록(각 줄 = 한 문단)."""
+    para_pr = "14" if header else "4"
+    if not lines:
+        lines = [""]
+    paras = "".join(
+        '<hp:p id="0" paraPrIDRef="%s" styleIDRef="0" pageBreak="0" '
+        'columnBreak="0" merged="0"><hp:run charPrIDRef="8"><hp:t>%s</hp:t>'
+        '</hp:run></hp:p>' % (para_pr, _esc(ln))
+        for ln in lines)
+    return (
+        '<hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" '
+        'dirty="0" borderFillIDRef="5"><hp:subList id="" '
+        'textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" '
+        'linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" '
+        'hasTextRef="0" hasNumRef="0">%s</hp:subList>'
+        '<hp:cellAddr colAddr="%d" rowAddr="%d"/>'
+        '<hp:cellSpan colSpan="%d" rowSpan="%d"/>'
+        '<hp:cellSz width="%d" height="%d"/>'
+        '<hp:cellMargin left="141" right="141" top="141" bottom="141"/></hp:tc>'
+        % (paras, col, row, colspan, rowspan, width, height))
+
+
+def _lines(value):
+    r"""JSON 값의 줄바꿈(\n)을 줄 목록으로. None/빈값은 ['-']."""
+    if value is None or value == "":
+        return ["-"]
+    return str(value).split("\n")
+
+
+def cmd_build_schedule(args):
+    r"""출장일정 표를 JSON(days[])로부터 7열 병합 표로 통째로 다시 만든다.
+
+    JSON 형식:
+    {
+      "days": [
+        {"date":"7월 22일\n(수)","from":"부산","to":"싱가포르/\n싱가포르",
+         "org":"-","meet":"-","work":"출국 및 싱가포르(출장지) 도착"},
+        {"date":"7월 23일\n(목)","from":"-","to":"싱가포르/\n싱가포르",
+         "org":"National\nUniversity of\nSingapore","meet":"-",
+         "persons":[
+            {"name":"서준호","work":"- ...\n- ..."},
+            {"name":"심성보","work":"- ..."},
+            {"name":"정덕기","work":"- ..."}
+         ]}
+      ]
+    }
+    - persons가 2명 이상이면 그 날은 인원수만큼 행으로 나뉘고 날짜·장소 칸은 rowSpan으로 묶임.
+    - persons가 없거나 1명이면 한 행. 업무수행내용은 colSpan=2로 두 열을 합침(work 또는 persons[0].work).
+    """
+    with open(args.data, encoding="utf-8") as f:
+        days = json.load(f)["days"]
+
+    xml = _read_section(args.src)
+    ts, te = _find_table(xml, args.table_id)
+    tbl = xml[ts:te]
+    open_m = re.match(r"<hp:tbl\b[^>]*>", tbl)
+    open_tag = open_m.group(0)
+    first_tr = tbl.index("<hp:tr>")
+    prefix = tbl[open_m.end():first_tr]   # <hp:sz>/<hp:pos>/<hp:outMargin>/<hp:inMargin>
+
+    W = SCHED_COL_W
+    rows = []
+
+    # ---- 머리글 행 (그리드 row 0) ----
+    header = [
+        _sched_cell(0, 0, 1, 1, W[0], SCHED_HEADER_H, ["월 일", "(요일)"], header=True),
+        _sched_cell(1, 0, 1, 1, W[1], SCHED_HEADER_H, ["출발지"], header=True),
+        _sched_cell(2, 0, 1, 1, W[2], SCHED_HEADER_H, ["도착지"], header=True),
+        _sched_cell(3, 0, 1, 1, W[3], SCHED_HEADER_H, ["방문기관"], header=True),
+        _sched_cell(4, 0, 2, 1, W[4] + W[5], SCHED_HEADER_H, ["업무수행내용"], header=True),
+        _sched_cell(6, 0, 1, 1, W[6], SCHED_HEADER_H, ["면담예정자", "(직위포함)"], header=True),
+    ]
+    rows.append("<hp:tr>" + "".join(header) + "</hp:tr>")
+
+    grow = 1   # 다음에 쓸 그리드 행 번호
+    for day in days:
+        date, dfrom = _lines(day.get("date")), _lines(day.get("from"))
+        dto, org = _lines(day.get("to")), _lines(day.get("org"))
+        meet = _lines(day.get("meet"))
+        persons = day.get("persons") or []
+
+        if len(persons) >= 2:
+            # 행사일·동행 N인: N개 그리드 행, 날짜·장소·면담 칸은 rowSpan=N
+            n = len(persons)
+            h = SCHED_ROW_H * n
+            first = [
+                _sched_cell(0, grow, 1, n, W[0], h, date),
+                _sched_cell(1, grow, 1, n, W[1], h, dfrom),
+                _sched_cell(2, grow, 1, n, W[2], h, dto),
+                _sched_cell(3, grow, 1, n, W[3], h, org),
+                _sched_cell(4, grow, 1, 1, W[4], SCHED_ROW_H, _lines(persons[0].get("work"))),
+                _sched_cell(5, grow, 1, 1, W[5], SCHED_ROW_H, _lines(persons[0].get("name"))),
+                _sched_cell(6, grow, 1, n, W[6], h, meet),
+            ]
+            rows.append("<hp:tr>" + "".join(first) + "</hp:tr>")
+            for k in range(1, n):
+                # 가려진 칸(0~3,6)은 생략 — 업무수행내용·담당자 2칸만
+                later = [
+                    _sched_cell(4, grow + k, 1, 1, W[4], SCHED_ROW_H, _lines(persons[k].get("work"))),
+                    _sched_cell(5, grow + k, 1, 1, W[5], SCHED_ROW_H, _lines(persons[k].get("name"))),
+                ]
+                rows.append("<hp:tr>" + "".join(later) + "</hp:tr>")
+            grow += n
+        else:
+            # 이동일 또는 단독 행사일: 한 행, 업무수행내용은 colSpan=2
+            work = day.get("work")
+            if work is None and persons:
+                work = persons[0].get("work")
+            cells = [
+                _sched_cell(0, grow, 1, 1, W[0], SCHED_ROW_H, date),
+                _sched_cell(1, grow, 1, 1, W[1], SCHED_ROW_H, dfrom),
+                _sched_cell(2, grow, 1, 1, W[2], SCHED_ROW_H, dto),
+                _sched_cell(3, grow, 1, 1, W[3], SCHED_ROW_H, org),
+                _sched_cell(4, grow, 2, 1, W[4] + W[5], SCHED_ROW_H, _lines(work)),
+                _sched_cell(6, grow, 1, 1, W[6], SCHED_ROW_H, meet),
+            ]
+            rows.append("<hp:tr>" + "".join(cells) + "</hp:tr>")
+            grow += 1
+
+    total_rows = grow
+    total_h = SCHED_HEADER_H + (total_rows - 1) * SCHED_ROW_H
+
+    # 여는 태그의 rowCnt/colCnt 갱신
+    new_tag = re.sub(r'\browCnt="\d+"', 'rowCnt="%d"' % total_rows, open_tag)
+    new_tag = re.sub(r'\bcolCnt="\d+"', 'colCnt="7"', new_tag)
+    # 표 전체 높이(<hp:sz height>) 갱신 — 폭은 그대로
+    new_prefix = re.sub(r'(<hp:sz\b[^>]*\bheight=")\d+(")',
+                        r"\g<1>%d\g<2>" % total_h, prefix, count=1)
+
+    new_tbl = new_tag + new_prefix + "".join(rows) + "</hp:tbl>"
+    _write_section(args.src, args.dst, xml[:ts] + new_tbl + xml[te:])
+    print("[완료] 출장일정 표 %s 재구성: 7열 병합 표, %d행(머리글 포함) → %s"
+          % (args.table_id, total_rows, args.dst))
+
+
 # --------------------------------------------------------------- insert-para
 def cmd_insert_para(args):
     if args.text_file:
@@ -263,6 +437,34 @@ def cmd_insert_para(args):
 
     _write_section(args.src, args.dst, xml[:pe] + paras + xml[pe:])
     print(f"[완료] {args.anchor!r} 뒤에 {len(lines)}개 문단 삽입 → {args.dst}")
+
+
+# --------------------------------------------------------------- delete-para
+def cmd_delete_para(args):
+    """anchor 텍스트를 포함하는 <hp:p> 문단 하나를 통째로 삭제한다.
+
+    양식에 미리 들어 있는 기본 문구(예: 첨부 기본 목록, 옛 출장기간 줄)를
+    없앨 때 쓴다. anchor는 그 문단 안 텍스트의 일부이며 문서에서 유일해야 한다.
+    유니코드 깨짐을 피하려면 --anchor-file로 파일에 담아 넘긴다.
+    """
+    if args.anchor_file:
+        with open(args.anchor_file, encoding="utf-8") as f:
+            anchor = f.read().strip("\n")
+    else:
+        anchor = args.anchor if args.anchor is not None else ""
+    if not anchor:
+        sys.exit("[오류] --anchor 또는 --anchor-file 로 삭제할 문단 텍스트를 지정하세요.")
+
+    xml = _read_section(args.src)
+    idx = xml.find(anchor)
+    if idx == -1:
+        sys.exit(f"[오류] 삭제할 문단 미발견: {anchor!r}. 'dump'로 본문 텍스트 확인.")
+    ps = xml.rfind("<hp:p ", 0, idx)
+    pe = xml.index("</hp:p>", idx) + len("</hp:p>")
+    if ps == -1 or pe <= ps:
+        sys.exit("[오류] 문단 경계 탐색 실패")
+    _write_section(args.src, args.dst, xml[:ps] + xml[pe:])
+    print(f"[완료] 문단 삭제: {anchor!r} → {args.dst}")
 
 
 # ----------------------------------------------------------------- format
@@ -431,12 +633,24 @@ def main():
     p.add_argument("--text-file", default=None, help="여러 줄 내용을 담은 텍스트 파일")
     p.set_defaults(func=cmd_set_cell)
 
+    p = sub.add_parser("build-schedule", help="출장일정 표를 7열 병합 표로 재구성")
+    p.add_argument("src"); p.add_argument("dst")
+    p.add_argument("--table-id", required=True)
+    p.add_argument("--data", required=True, help="days[] 구조의 JSON 파일")
+    p.set_defaults(func=cmd_build_schedule)
+
     p = sub.add_parser("insert-para", help="문단 뒤에 본문 삽입")
     p.add_argument("src"); p.add_argument("dst")
     p.add_argument("--anchor", required=True, help="삽입 기준이 되는 기존 문단의 텍스트")
     p.add_argument("--text", default=None)
     p.add_argument("--text-file", default=None, help="여러 줄 내용을 담은 텍스트 파일")
     p.set_defaults(func=cmd_insert_para)
+
+    p = sub.add_parser("delete-para", help="anchor 텍스트를 가진 문단 삭제")
+    p.add_argument("src"); p.add_argument("dst")
+    p.add_argument("--anchor", default=None, help="삭제할 문단 안 텍스트(유일해야 함)")
+    p.add_argument("--anchor-file", default=None, help="삭제할 문단 텍스트를 담은 파일(유니코드 안전)")
+    p.set_defaults(func=cmd_delete_para)
 
     p = sub.add_parser("format", help="서식 일괄 적용(제목 볼드/줄간격/표 속성/셀 정렬)")
     p.add_argument("src"); p.add_argument("dst")

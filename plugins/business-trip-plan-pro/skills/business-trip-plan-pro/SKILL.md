@@ -53,7 +53,7 @@ KIMM 연구원의 국외출장 계획서를 별지 제2호 hwpx 양식으로 작
 ### Step 5: 마크다운 초안 작성
 - `references/form-structure.md` — 6개 항목 템플릿
 - `references/writing-style.md` — 문체 규칙
-- `references/schedule-template.md` — 일자별 일정 표
+- `references/schedule-template.md` — 일자별 일정 표 (셀 병합 HTML `<table>`)
 - `references/budget-calculator.md` — 여비 산식
 - examples 폴더 — 톤 참조
 - 작성 후 사용자 검토
@@ -73,7 +73,7 @@ KIMM 연구원의 국외출장 계획서를 별지 제2호 hwpx 양식으로 작
 - `references/schedule-template.md` — 출장일정 표 작성 패턴
 - `references/budget-calculator.md` — 등급지별 일비/식비/숙박비 산식
 - `references/hwpx-output.md` — hwpx 양식 채우기 + 이미지 자리표시
-- `scripts/hwpx_fill.py` — hwpx 양식 dump/치환/행추가/셀설정 도구
+- `scripts/hwpx_fill.py` — hwpx 양식 dump/치환/행추가/셀설정 + 출장일정 7열 병합 표 생성(build-schedule) 도구
 - `scripts/pdf_to_png.py` — PDF(항공인보이스/논문) → PNG 렌더링
 - `scripts/capture_web.py` — 행사 홈페이지 헤드리스 스크린샷
 - `assets/` — 별지 제2호 양식 hwpx, 해외출장 여비 정액표 pdf (작업 폴더에 없을 때 폴백)

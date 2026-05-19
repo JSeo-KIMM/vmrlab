@@ -15,7 +15,7 @@
 | 표 | id (예시) | 크기 | 용도 |
 |---|---|---|---|
 | 신청자 | 1080418668 | 3×3 | 값 행 = row 2: (2,0)소속 (2,1)직급 (2,2)성명 |
-| 출장일정 | 1081106548 | 2×6 | row0 머리글, row1 데이터(인천/인천). 행 추가 필요 |
+| 출장일정 | 1081106548 | 2×6 (양식) | `build-schedule`로 7열 병합 표로 통째 교체 (Step 4) |
 | 최근 3년 실적 | 1081106545 | 2×3 | row0 머리글, row1 데이터. 실적 수만큼 행 추가 |
 | 출장예산(소요경비) | 1081106546 | 5×2 | (0,1)왕복교통비 (1,1)일비 (2,1)식비 (3,1)숙박비 (4,1)합계 |
 | 반출 현황 | 1081106547 | 6×3 | **수정 금지** |
@@ -27,18 +27,27 @@
 ## 2. 작업 순서
 
 편집은 항상 `src → dst`로 새 파일을 만들며 단계별로 사본을 이어간다
-(`work1.hwpx → work2.hwpx → ...`). 내용 채우기(Step 1~7)를 모두 마친 뒤
-**Step 8 `format`을 마지막에 실행해 그 출력이 최종 파일**이 된다.
+(`work1.hwpx → work2.hwpx → ...`). 내용 채우기(Step 1~8)를 모두 마친 뒤
+**Step 9 `format`을 마지막에 실행해 그 출력이 최종 파일**이 된다.
 
 ### Step 1 — 본문 치환 (replace)
 
 `dump`에서 본 **정확한 원본 문자열**을 키로 하는 JSON 매핑을 만든다.
 양식에 이미 예시값(보스턴 출장)이 들어 있으므로 그 문자열을 그대로 키로 쓴다.
+제출일자·출장기간·출장국·동행자·지급계정은 **반드시 `replace`로 바꾼다**.
+`insert-para`로 새 줄을 넣으면 양식의 옛 줄이 그대로 남아 **줄이 중복**된다.
+
+**⚠ 인라인 태그 주의 — `replace` 키는 dump의 `[replace 키]`를 그대로 쓴다.**
+양식 문장 안에는 `<hp:fwSpace/>`(전각공백)·`<hp:tab/>` 같은 인라인 태그가 섞여 있다.
+`replace`는 XML 문자열을 그대로 치환하므로, 화면에 보이는 정리된 텍스트가 아니라
+**태그까지 포함한 원본 문자열**을 키로 써야 한다. `dump`는 그런 줄에 대해
+`[replace 키: ...]`를 따로 표시하므로 그 값을 그대로 복사한다. 예: 출장기간 줄은
+실제로 `  ○ 출장기간 : 2026. 06. 21<hp:fwSpace/><hp:fwSpace/> ～ ...`처럼 되어 있다.
 
 ```json
 {
   "제출일자 : 20   .   .   .": "제출일자 : 2025. 9. 1.",
-  "  ○ 출장기간 : 2026. 06. 21 ～ 2026. 06. 27. ( 7 일간)": "  ○ 출장기간 : 2025. 09. 22. ～ 2025. 09. 28. (5박 7일간)",
+  "  ○ 출장기간 : 2026. 06. 21<hp:fwSpace/><hp:fwSpace/> ～ 2026. 06. 27. ( 7 일간)": "  ○ 출장기간 : 2025. 09. 22. ～ 2025. 09. 28. (5박 7일간)",
   "○ 출장국 : ": "○ 출장국 : 미국 (보스턴)",
   "  ○ 동행자 :    명(내부직원 성명/부서명)": "  ○ 동행자 : 단독 출장",
   "  ○ 지급계정": "  ○ 지급계정 ( EG0740 비대면 진단이 가능한 다자유도 원격 로봇 플랫폼 개발 )"
@@ -47,7 +56,8 @@
 ```bash
 python scripts/hwpx_fill.py replace 양식.hwpx work1.hwpx map.json
 ```
-`～`(전각 물결표) 등 특수문자는 dump 출력에서 복사해 쓴다. 미발견 경고가 나오면 키 문자열을 다시 맞춘다.
+`～`(전각 물결표) 등 특수문자는 dump 출력에서 복사해 쓴다. **미발견 경고가 나오면
+`insert-para`로 우회하지 말고** 키 문자열을 dump의 `[replace 키]`와 다시 맞춘다.
 
 ### Step 2 — 신청자 표 (set-cell)
 
@@ -68,17 +78,44 @@ python scripts/hwpx_fill.py insert-para work5.hwpx work6.hwpx --anchor "4. 출�
 - `sec1.txt`/`sec4.txt`는 `form-structure.md`·`writing-style.md`에 따라 작성한 본문.
 - 이미지가 들어갈 위치에는 안내 문단을 한 줄 넣는다: `[그림: images/행사_홈페이지.png — 한글에서 이 위치에 삽입]`
 
-### Step 4 — 출장일정 표 (expand-rows → set-cell)
+### Step 4 — 출장일정 표 (build-schedule)
 
-출장 일수가 N일이면 데이터 행이 N개 필요하다. 양식엔 데이터 행 1개(row 1)뿐이므로 `N-1`행 추가.
+출장일정 표는 셀 병합(rowspan/colspan)이 필요하다. 마크다운 초안의 HTML 표와
+**똑같은 7열 병합 모양**으로 hwpx 표를 만들어야 한다 — 동행 2인 이상인 행사일은
+인원수만큼 행으로 나뉘고, 담당자 이름이 별도 열에 들어간다. `expand-rows`/`set-cell`은
+평면 격자만 다루므로 쓰지 않고, **`build-schedule`** 명령으로 표를 통째로 재구성한다.
+
+먼저 출장일정 데이터를 JSON으로 만든다 (`schedule-template.md`의 경우 A/B/C 규칙과
+초안의 HTML 표 내용을 그대로 옮긴 것). `\n`은 칸 안 줄바꿈이다.
+
+```json
+{
+  "days": [
+    {"date": "7월 22일\n(수)", "from": "부산", "to": "싱가포르/\n싱가포르",
+     "org": "-", "meet": "-", "work": "출국 및 싱가포르(출장지) 도착"},
+    {"date": "7월 23일\n(목)", "from": "-", "to": "싱가포르/\n싱가포르",
+     "org": "National\nUniversity of\nSingapore", "meet": "-",
+     "persons": [
+       {"name": "서준호", "work": "- ACCAS 2026 학술대회 참석\n- ... 파악"},
+       {"name": "심성보", "work": "- ACCAS 2026 학술대회 참석\n- ... 파악"},
+       {"name": "정덕기", "work": "- ACCAS 2026 학술대회 참석\n- ... 파악"}
+     ]}
+  ]
+}
+```
+
+- 이동일·단독 출장 행사일 → `work` 한 줄(업무수행내용이 colSpan=2로 합쳐짐).
+- 동행 2인 이상 행사일 → `persons` 배열. 그 날은 인원수만큼 행으로 나뉘고
+  날짜·출발지·도착지·방문기관·면담예정자 칸이 rowSpan으로 묶인다.
+- `meet`(면담예정자)는 보통 `-`. 담당자 이름은 `persons[].name`이며 면담예정자와 다른 열이다.
 
 ```bash
-# 7일 일정 → 6행 추가 (총 데이터 행 7)
-python scripts/hwpx_fill.py expand-rows work6.hwpx work7.hwpx --table-id 1081106548 --row 1 --count 6
+python scripts/hwpx_fill.py build-schedule work6.hwpx work7.hwpx \
+  --table-id 1081106548 --data schedule.json
 ```
-그 다음 각 셀을 `set-cell`로 채운다. 데이터 행은 row 1 ~ row N. 열은
-0=월일(요일) 1=출발지 2=도착지 3=방문기관 4=업무수행내용 5=면담예정자.
-`schedule-template.md`의 규칙으로 날짜별 내용을 만든다. 동행자 분리는 `--text`에 `\n`(빈 줄 포함) 사용.
+
+`build-schedule`은 양식의 출장일정 표를 7열 병합 표로 통째로 교체한다 (표 id는 유지).
+머리글 1행 + 일자별 행이 자동 생성되므로 `expand-rows`로 행을 늘릴 필요가 없다.
 
 ### Step 5 — 최근 3년 실적 표
 
@@ -101,7 +138,35 @@ python scripts/hwpx_fill.py set-cell ... --table-id 1081106546 --row 4 --col 1 -
 
 **건드리지 않는다.** 양식 기본값 그대로 둔다.
 
-### Step 8 — 서식 일괄 적용 (format)
+### Step 8 — 첨부 항목
+
+양식 끝(6번 항목 뒤)에는 **기본 첨부 목록 5줄**이 미리 들어 있다 — 보통
+`첨부 : 1. 예실대비표 1부.` / `2. 논문발표 사본 1부.` / `3. 논문게재지 사본 1부.` /
+`4. 상대기관 수락서(Return Fax) 1부.` / `5. 관련 증빙서류 각 1부.`. 이 줄들은
+**아무것도 안 하면 그대로 남는다.** 반드시 초안의 첨부 내용으로 바꿔야 한다.
+
+처리 방법:
+1. `dump`로 양식의 첨부 5줄 원본 문자열을 확인한다 (`<hp:fwSpace/>` 등 인라인
+   태그가 섞여 있으니 `[replace 키]` 표기를 그대로 쓴다).
+2. 줄 수가 맞는 만큼 `replace`로 초안 첨부 줄로 바꾼다 (map.json에 함께 넣어도 됨).
+3. 초안 첨부가 5줄보다 길면 `insert-para`로 나머지 줄을 이어 넣고,
+   5줄보다 짧아 남는 기본 줄이 있으면 `delete-para`로 지운다.
+4. 초안의 `<첨부. ...>` 마커는 그림과 같은 방식으로 자리표시 문단으로 넣는다:
+   `[첨부: 예실대비표 1/2 — 한글에서 이 위치에 삽입]`.
+
+```bash
+# 예: 기본 5줄 중 일부를 replace, 모자라는 줄은 insert-para, 남는 줄은 delete-para
+python scripts/hwpx_fill.py replace      work8.hwpx work9.hwpx attach_map.json
+python scripts/hwpx_fill.py insert-para  work9.hwpx work10.hwpx \
+  --anchor "[첨부: 예실대비표 2/2 — 한글에서 이 위치에 삽입]" --text-file attach_tail.txt
+python scripts/hwpx_fill.py delete-para  work10.hwpx work11.hwpx --anchor-file old_line.txt
+```
+
+`delete-para`는 anchor 텍스트를 가진 문단을 통째로 지운다. 유니코드가 깨질 수 있으면
+`--anchor-file`로 파일에 담아 넘긴다. anchor는 `<hp:fwSpace/>`를 건너뛴 부분 문자열을
+써도 된다 (그 줄에서 유일하기만 하면 됨).
+
+### Step 9 — 서식 일괄 적용 (format)
 
 모든 내용 채우기가 끝난 **마지막에 한 번** 실행한다. 셀/문단을 새로 만든
 뒤에 돌려야 새 내용에도 서식이 적용되므로 반드시 마지막 단계다.
