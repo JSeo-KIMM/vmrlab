@@ -40,15 +40,96 @@
 ○ 동행자 : 서준호 책임연구원
 ○ 출장일정(세부적으로)
 
-| 월 일 (요일)    | 출발지         | 도착지         | 방문기관                  | 업무수행내용 | 면담예정자 (직위포함) |
-| -------------- | ------------- | ------------- | ------------------------ | ----------- | ------------------- |
-| 6월 17일 (월)   | 인천           | 스페인/ 바로셀로나 | -                        | 출국 및 바로셀로나(출장지) 도착 | - |
-| 6월 18일 (화)   | -              | 스페인/ 바로셀로나 | Universitat Pompeu Fabra | CARS 2024 학술대회 참석<br>  Surgical Robotics and Instrumentation 최신 연구동향 파악<br><br>CARS 2024 학술대회 참석<br>  Diagnostic / Therapeutic Workflow 최신 연구동향 파악 | 심성보<br><br>서준호 |
-| 6월 19일 (수)   | -              | 스페인/ 바로셀로나 | Universitat Pompeu Fabra | CARS 2024 학술대회 참석<br>  Decision Support Systems 최신 연구동향 파악<br><br>CARS 2024 학술대회 참석<br>  Segmentation and Classification/Detection 최신 연구동향 파악 | 심성보<br><br>서준호 |
-| 6월 20일 (목)   | -              | 스페인/ 바로셀로나 | Universitat Pompeu Fabra | CARS 2024 학술대회 참석 및 연구성과 발표<br>  Surgical Robotics and Instrumentation 최신 연구동향 파악<br><br>- CARS 2024 학술대회 참석 및 연구성과 발표<br>  Medical Imaging 최신 연구동향 파악 | 심성보<br><br>서준호 |
-| 6월 21일 (금)   | -              | 스페인/ 바로셀로나 | Universitat Pompeu Fabra | CARS 2024 학술대회 참석<br>  Clinical Decision and Support Systems 최신 연구동향 파악<br><br>- CARS 2024 학술대회 참석<br>  Advances in Imaging and Intervention 최신 연구동향 파악 | 심성보<br><br>서준호 |
-| 6월 22일 (토)   | 스페인/ 바로셀로나 | 인천            | -                        | 입국 항공기 탑승 | - |
-| 6월 23일 (일)   | -              | 인천            | -                        | 인천 도착 | - |
+<table>
+  <thead>
+    <tr>
+      <th>월 일<br>(요일)</th>
+      <th>출발지</th>
+      <th>도착지</th>
+      <th>방문기관</th>
+      <th colspan="2">업무수행내용</th>
+      <th>면담예정자<br>(직위포함)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>6월 17일<br>(월)</td>
+      <td>인천</td>
+      <td>스페인/<br>바르셀로나</td>
+      <td>-</td>
+      <td colspan="2">출국 및 바르셀로나(출장지) 도착</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td rowspan="2">6월 18일<br>(화)</td>
+      <td rowspan="2">-</td>
+      <td rowspan="2">스페인/<br>바르셀로나</td>
+      <td rowspan="2">Universitat<br>Pompeu<br>Fabra</td>
+      <td>- CARS 2024 학술대회 참석<br>- Surgical Robotics and Instrumentation 최신 연구동향 파악</td>
+      <td>심성보</td>
+      <td rowspan="2">-</td>
+    </tr>
+    <tr>
+      <td>- CARS 2024 학술대회 참석<br>- Diagnostic / Therapeutic Workflow 최신 연구동향 파악<br>- ACCAS2024 홍보 활동<br>- MICCAI2025 홍보 활동</td>
+      <td>서준호</td>
+    </tr>
+    <tr>
+      <td rowspan="2">6월 19일<br>(수)</td>
+      <td rowspan="2">-</td>
+      <td rowspan="2">스페인/<br>바르셀로나</td>
+      <td rowspan="2">Universitat<br>Pompeu<br>Fabra</td>
+      <td>- CARS 2024 학술대회 참석<br>- Decision Support Systems 최신 연구동향 파악</td>
+      <td>심성보</td>
+      <td rowspan="2">-</td>
+    </tr>
+    <tr>
+      <td>- CARS 2024 학술대회 참석<br>- Segmentation and Classification/Detection 최신 연구동향 파악</td>
+      <td>서준호</td>
+    </tr>
+    <tr>
+      <td rowspan="2">6월 20일<br>(목)</td>
+      <td rowspan="2">-</td>
+      <td rowspan="2">스페인/<br>바르셀로나</td>
+      <td rowspan="2">Universitat<br>Pompeu<br>Fabra</td>
+      <td>- CARS 2024 학술대회 참석 및 연구성과 발표<br>- Surgical Robotics and Instrumentation 최신 연구동향 파악</td>
+      <td>심성보</td>
+      <td rowspan="2">-</td>
+    </tr>
+    <tr>
+      <td>- CARS 2024 학술대회 참석 및 연구성과 발표<br>- Medical Imaging 최신 연구동향 파악</td>
+      <td>서준호</td>
+    </tr>
+    <tr>
+      <td rowspan="2">6월 21일<br>(금)</td>
+      <td rowspan="2">-</td>
+      <td rowspan="2">스페인/<br>바르셀로나</td>
+      <td rowspan="2">Universitat<br>Pompeu<br>Fabra</td>
+      <td>- CARS 2024 학술대회 참석<br>- Clinical Decision and Support Systems 최신 연구동향 파악</td>
+      <td>심성보</td>
+      <td rowspan="2">-</td>
+    </tr>
+    <tr>
+      <td>- CARS 2024 학술대회 참석<br>- Advances in Imaging and Intervention 최신 연구동향 파악<br>- KSMR 국제협력 부회장 활동 (ASCAS 임시 이사회 참석)</td>
+      <td>서준호</td>
+    </tr>
+    <tr>
+      <td>6월 22일<br>(토)</td>
+      <td>스페인/<br>바르셀로나</td>
+      <td>인천</td>
+      <td>-</td>
+      <td colspan="2">입국 항공기 탑승</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>6월 23일<br>(일)</td>
+      <td>-</td>
+      <td>인천</td>
+      <td>-</td>
+      <td colspan="2">인천 도착</td>
+      <td>-</td>
+    </tr>
+  </tbody>
+</table>
 
 ※ 2인 이상이 동행하는 경우는 개인별 업무수행 내용을 구체적으로 명시
 ※ 출장일정 「요일」 반드시 기재 (국외출장사전자체평가서의 출발일, 귀국일 등 휴무일 연계성 평가)
