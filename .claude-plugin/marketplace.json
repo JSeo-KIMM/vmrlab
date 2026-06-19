@@ -5,7 +5,7 @@
     "url": "https://github.com/JSeo-KIMM"
   },
   "metadata": {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "연구계획서 생성, 시각자료 성성 마켓플레이스"
   },
   "plugins": [
@@ -87,7 +87,7 @@
       "name": "business-trip-plan-pro",
       "source": "./plugins/business-trip-plan-pro",
       "description": "KIMM 국외출장 계획서(별지 제2호) 작성 (출장유형 선택 + 필수파일 점검 + 행사 웹조사 + 양식 6개 항목 + ~함체 스타일 + hwpx 양식 자동 작성 + 서식 일괄 적용)",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "agents": [
         "./agents/business-trip-drafter.md"
       ],

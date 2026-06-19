@@ -68,6 +68,40 @@ def _read_section(path):
     return _read_part(path, SECTION)
 
 
+def _patch_deflate_flags(path):
+    """deflate(method=8) 항목의 General Purpose Bit Flag 에 0x0004 비트를 세팅한다.
+
+    Python zipfile 은 이 비트를 0 으로 쓰지만 한컴(Hancom)이 만든 hwpx 는 0x0004 를 쓴다.
+    일부 한글 버전이 외부에서 다시 압축한 hwpx 를 '문서 손상/보안'으로 거부하는 것을
+    예방하기 위해, 저장 직후 ZIP 의 로컬 헤더·중앙 디렉터리 플래그를 한컴 방식으로 맞춘다.
+    (이 비트는 압축 레벨 표시용 정보 비트라 압축 해제에는 영향이 없어 안전하다.)
+    """
+    import struct
+    data = bytearray(open(path, "rb").read())
+    eo = data.rfind(b"PK\x05\x06")
+    if eo < 0:
+        return
+    total = struct.unpack_from("<H", data, eo + 10)[0]
+    p = struct.unpack_from("<I", data, eo + 16)[0]
+    for _ in range(total):
+        if data[p:p + 4] != b"PK\x01\x02":
+            break
+        flag = struct.unpack_from("<H", data, p + 8)[0]
+        method = struct.unpack_from("<H", data, p + 10)[0]
+        nlen = struct.unpack_from("<H", data, p + 28)[0]
+        elen = struct.unpack_from("<H", data, p + 30)[0]
+        clen = struct.unpack_from("<H", data, p + 32)[0]
+        lho = struct.unpack_from("<I", data, p + 42)[0]
+        if method == 8:
+            struct.pack_into("<H", data, p + 8, flag | 0x0004)
+            if data[lho:lho + 4] == b"PK\x03\x04":
+                lf = struct.unpack_from("<H", data, lho + 6)[0]
+                struct.pack_into("<H", data, lho + 6, lf | 0x0004)
+        p += 46 + nlen + elen + clen
+    with open(path, "wb") as f:
+        f.write(data)
+
+
 def _write_parts(src, dst, parts):
     """src의 모든 파트를 복사하되 parts({파트명: 새 XML})만 교체해 dst로 저장."""
     tmp = dst + ".tmp"
@@ -77,6 +111,7 @@ def _write_parts(src, dst, parts):
             if item.filename in parts:
                 data = parts[item.filename].encode("utf-8")
             zout.writestr(item, data)
+    _patch_deflate_flags(tmp)        # 한컴 호환 ZIP 플래그로 보정
     if os.path.exists(dst):
         os.remove(dst)
     os.rename(tmp, dst)
@@ -89,6 +124,51 @@ def _write_section(src, dst, xml):
 
 def _esc(text):
     return (text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+# 문단에 줄배치 정보(linesegarray)가 없으면 한글이 '문서 손상'으로 처리한다.
+# 또 글자 수가 바뀌면 기존 linesegarray 의 textpos 가 글자 수를 초과해 손상 처리된다.
+# 아래 두 도우미로 (1) 새 문단에 유효한 linesegarray 를 부여하고
+# (2) 치환으로 길이가 바뀐 문단의 linesegarray 를 첫 줄(textpos=0)만 남겨 정상화한다.
+_DEFAULT_LINESEG = ('<hp:lineseg textpos="0" vertpos="0" vertsize="1000" textheight="1000" '
+                    'baseline="850" spacing="600" horzpos="0" horzsize="40000" flags="393216"/>')
+
+
+def _lsa_template(block):
+    """block(셀/문단 XML)에서 첫 hp:lineseg 를 찾아 textpos=0 으로 만든 linesegarray 문자열 반환.
+
+    실제 셀/문단의 줄높이·위치 메트릭을 물려받으므로 한글이 안정적으로 재배치한다.
+    찾지 못하면 안전한 기본값을 쓴다.
+    """
+    m = re.search(r"<hp:lineseg\b[^>]*/>", block)
+    seg = m.group(0) if m else _DEFAULT_LINESEG
+    seg = re.sub(r'textpos="\d+"', 'textpos="0"', seg, count=1)
+    return "<hp:linesegarray>%s</hp:linesegarray>" % seg
+
+
+def _collapse_lsa_for_text(xml, needle):
+    """needle 텍스트를 포함하는 문단의 linesegarray 를 첫 lineseg(textpos=0)만 남긴다.
+
+    replace 로 글자 수가 바뀐 문단의 stale 한 textpos(>글자수) 로 인한 '문서 손상'을 막는다.
+    문단 경계는 정규식이 아니라 rfind/index 로 잡아 표 중첩 구조에서도 안전하다.
+    """
+    idx = 0
+    while True:
+        i = xml.find(needle, idx)
+        if i < 0:
+            break
+        ps = xml.rfind("<hp:p ", 0, i)
+        pe = xml.index("</hp:p>", i) + len("</hp:p>")
+        p = xml[ps:pe]
+        m = re.search(r"<hp:linesegarray>\s*(<hp:lineseg\b[^>]*/>)", p, re.S)
+        if m:
+            first = m.group(1)
+            p2 = re.sub(r"<hp:linesegarray>.*?</hp:linesegarray>",
+                        "<hp:linesegarray>%s</hp:linesegarray>" % first, p, count=1, flags=re.S)
+            xml = xml[:ps] + p2 + xml[pe:]
+            pe = ps + len(p2)
+        idx = pe
+    return xml
 
 
 # ---------------------------------------------------------------- table parse
@@ -159,6 +239,10 @@ def cmd_replace(args):
             print(f"[경고] 미발견: {old!r}", file=sys.stderr)
         xml = xml.replace(old, new)
         n += cnt
+    # 길이가 바뀐 문단의 stale linesegarray(textpos>글자수) 정상화 → '문서 손상' 방지
+    for new in mapping.values():
+        if new:
+            xml = _collapse_lsa_for_text(xml, new)
     _write_section(args.src, args.dst, xml)
     print(f"[완료] {n}건 치환 → {args.dst}")
 
@@ -236,10 +320,11 @@ def cmd_set_cell(args):
     char_pr = cm.group(1) if cm else "0"
 
     lines = text.split("\n") if text else [""]
+    lsa = _lsa_template(tc)        # 원본 셀의 줄배치 정보(첫 lineseg) 보존 → '문서 손상' 방지
     paras = "".join(
         '<hp:p id="0" paraPrIDRef="%s" styleIDRef="%s" pageBreak="0" columnBreak="0" merged="0">'
-        '<hp:run charPrIDRef="%s"><hp:t>%s</hp:t></hp:run></hp:p>'
-        % (para_pr, style, char_pr, _esc(ln))
+        '<hp:run charPrIDRef="%s"><hp:t>%s</hp:t></hp:run>%s</hp:p>'
+        % (para_pr, style, char_pr, _esc(ln), lsa)
         for ln in lines)
 
     # <hp:subList ...> ... </hp:subList> 내부를 새 문단으로 교체
@@ -429,10 +514,11 @@ def cmd_insert_para(args):
     char_pr = cm.group(1) if cm else "0"
 
     lines = text.split("\n") if text else [""]
+    lsa = _lsa_template(anchor_p)  # 기준 문단의 줄배치 정보(첫 lineseg) 상속 → '문서 손상' 방지
     paras = "".join(
         '<hp:p id="0" paraPrIDRef="%s" styleIDRef="%s" pageBreak="0" columnBreak="0" merged="0">'
-        '<hp:run charPrIDRef="%s"><hp:t>%s</hp:t></hp:run></hp:p>'
-        % (para_pr, style, char_pr, _esc(ln))
+        '<hp:run charPrIDRef="%s"><hp:t>%s</hp:t></hp:run>%s</hp:p>'
+        % (para_pr, style, char_pr, _esc(ln), lsa)
         for ln in lines)
 
     _write_section(args.src, args.dst, xml[:pe] + paras + xml[pe:])
